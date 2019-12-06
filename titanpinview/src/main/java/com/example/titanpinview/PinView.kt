@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.text.Editable
-import android.text.InputFilter
 import android.text.InputFilter.LengthFilter
 import android.text.InputType
 import android.text.TextWatcher
@@ -22,12 +21,14 @@ class PinView : AppCompatEditText {
 
     private val MIN_LINE_LENGTH = dpToPx(50f)
     private val spaceBetweenLines = dpToPx(23f)
-    private val bottomSpace = dpToPx(30f)
-    private val circleRadius = dpToPx(4.5f)
+    private val bottomSpace = dpToPx(20f)
+    private var fontSize = 42
+    private var placeholder: String = "."
     private var numDigits = 4
+    private var showValue: Boolean = false
 
     private lateinit var linePaint: Paint
-    private lateinit var circlePaint: Paint
+    private lateinit var placeholderPaint: Paint
 
     private var onPinEnteredListener: OnPinEnteredListener? = null
 
@@ -53,6 +54,15 @@ class PinView : AppCompatEditText {
         this.onPinEnteredListener = onPinEnteredListener
     }
 
+    fun showValue(value: Boolean) {
+        this.showValue = value
+        requestLayout()
+    }
+
+    fun isShowValue(): Boolean {
+        return showValue
+    }
+
     fun setNumDigits(numDigits: Int) {
         this.numDigits = numDigits
         setMaxDigits(numDigits)
@@ -60,11 +70,7 @@ class PinView : AppCompatEditText {
     }
 
     private fun setMaxDigits(numDigits: Int) {
-        val editFilters = this.filters
-        val newFilters = arrayOfNulls<InputFilter>(editFilters.size + 1)
-        System.arraycopy(editFilters, 0, newFilters, 0, editFilters.size)
-        newFilters[editFilters.size] = LengthFilter(numDigits)
-        this.filters = newFilters
+        this.filters = arrayOf(*this.filters, LengthFilter(numDigits))
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -117,7 +123,12 @@ class PinView : AppCompatEditText {
                 )
                 if (textLength > i) {
                     val middle = (startX + stopX) / 2
-                    canvas.drawCircle(middle, startY - bottomSpace, circleRadius, circlePaint)
+                    canvas.drawText(
+                        if (showValue) text.toString()[i].toString() else placeholder,
+                        middle - placeholderPaint.measureText(placeholder) / 2,
+                        startY - bottomSpace,
+                        placeholderPaint
+                    )
                 }
                 startX += lineSize.toInt() + spaceBetweenLines.toInt()
                 stopX = startX + lineSize
@@ -174,11 +185,10 @@ class PinView : AppCompatEditText {
         }
     }
 
-    private fun initAttributes(
-        context: Context,
-        attrs: AttributeSet
-    ) {
+    private fun initAttributes(context: Context, attrs: AttributeSet) {
+
         val typedArray = context.obtainStyledAttributes(attrs, R.styleable.PinView)
+
         try {
             numDigits = typedArray.getInt(R.styleable.PinView_num_digits, 4)
             val bottomLineColor = typedArray.getColor(
@@ -189,11 +199,24 @@ class PinView : AppCompatEditText {
             linePaint.color = bottomLineColor
             linePaint.strokeWidth = dpToPx(2f)
             val circleColor = typedArray.getColor(
-                R.styleable.PinView_circle_color,
+                R.styleable.PinView_placeholder_color,
                 context.resources.getColor(R.color.green)
             )
-            circlePaint = Paint(Paint.ANTI_ALIAS_FLAG)
-            circlePaint.color = circleColor
+            placeholderPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+            placeholderPaint.color = circleColor
+
+            val holder = typedArray.getString(R.styleable.PinView_placeholder_character)
+            if (!holder.isNullOrBlank()) {
+                placeholder = holder[0].toString()
+            }
+
+            fontSize =
+                typedArray.getDimensionPixelSize(
+                    R.styleable.PinView_placeholder_font_size,
+                    fontSize
+                )
+            placeholderPaint.textSize = fontSize.toFloat()
+
         } finally {
             typedArray.recycle()
         }
@@ -226,8 +249,7 @@ class PinView : AppCompatEditText {
     }
 
     private fun calculateHeight(): Int {
-        val circleHeight = circleRadius * 2
-        return (paddingBottom + bottomSpace + circleHeight + paddingTop).toInt()
+        return (paddingBottom + bottomSpace + fontSize + linePaint.strokeWidth + paddingTop).toInt()
     }
 
     private fun calculateWidth(): Int {

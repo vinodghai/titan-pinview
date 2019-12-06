@@ -1,6 +1,7 @@
 package com.example.pinviewdemo
 
 import android.os.Bundle
+import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.titanpinview.PinView
@@ -13,6 +14,7 @@ class MainActivity : AppCompatActivity(), PinView.OnPinEnteredListener {
 
         val pinView: PinView = findViewById(R.id.pinView)
 
+        findViewById<Button>(R.id.btToggle).setOnClickListener { pinView.showValue(!pinView.isShowValue()) }
         pinView.setOnPinEnteredListener(this)
     }
 
