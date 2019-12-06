@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <declare-styleable name="PinView">
+        <attr name="num_digits" format="integer" />
+        <attr name="bottom_line_color" format="color" />
+        <attr name="circle_color" format="color" />
+    </declare-styleable>
+
+</resources>
